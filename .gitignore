@@ -7,3 +7,4 @@ vitis_hls.log
 src/_single_file.cpp
 vitis_hls_project
 vivado_project
+vivado_*
