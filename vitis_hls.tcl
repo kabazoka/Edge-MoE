@@ -13,7 +13,7 @@ add_files src/layernorm.cpp
 add_files src/linear.cpp
 add_files src/moe.cpp
 add_files src/ViT_compute.cpp
-add_files -tb testbench/e2e.cpp -cflags "-Wno-unknown-pragmas" -csimflags "-Wno-unknown-pragmas"
+add_files -tb testbench/e2e.cpp -cflags "-Wno-unknown-pragmas -Wno-psabi" -csimflags "-Wno-unknown-pragmas -Wno-psabi"
 
 # Open the solution for HLS
 open_solution "solution1" -flow_target vitis
@@ -24,8 +24,11 @@ set_part {xczu9eg-ffvb1156-2-e}
 # Create a clock constraint (if needed)
 create_clock -period 300MHz -name default
 
-# Run HLS synthesis (if not already done)
-csynth_design
+# Run only C simulation
+# csim_design
 
 # Start co-simulation
-cosim_design -tool auto -trace_level none
+cosim_design -tool auto -trace_level all
+
+# Run HLS synthesis (if not already done)
+csynth_design

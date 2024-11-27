@@ -1,16 +1,35 @@
 #include "../include/kernel.hpp"
 #include "../include/tbutil.hpp"
 #include <array>
-#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <cstring>  // For memcpy
+
+// Include the generated header files
+#include "../weights/onboard/image.h"
+#include "../weights/onboard/patch_embed_weights.h"
+#include "../weights/onboard/patch_embed_bias.h"
+#include "../weights/onboard/pos_embed.h"
+#include "../weights/onboard/norm_weights.h"
+#include "../weights/onboard/norm_bias.h"
+#include "../weights/onboard/attn_weights.h"
+#include "../weights/onboard/attn_bias.h"
+#include "../weights/onboard/vit_weights_l1.h"
+#include "../weights/onboard/vit_bias_l1.h"
+#include "../weights/onboard/vit_weights_l2.h"
+#include "../weights/onboard/vit_bias_l2.h"
+#include "../weights/onboard/moe_weights_l1.h"
+#include "../weights/onboard/moe_bias_l1.h"
+#include "../weights/onboard/moe_weights_l2.h"
+#include "../weights/onboard/moe_bias_l2.h"
+#include "../weights/onboard/moe_w_gate_per_task.h"
+#include "../weights/onboard/reference_x.h"
 
 constexpr double MSE_PASS_THRESHOLD = 0.1;
 constexpr unsigned int DISPLAY_PATCH_LIMIT = 5;
 constexpr unsigned int DISPLAY_DIM_LIMIT = 5;
 
-using std::ifstream;
 using std::ostream;
 using std::ostringstream;
 using std::string;
@@ -56,290 +75,38 @@ patch_blocks_t reference_x;
 int main(int argc, char* argv[])
 {
     cout << "Loading inputs... " << flush;
-    {
-        string filename = "weights/image.float32.bin";
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, images[0]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    {
-        string filename = "weights/patch_embed_weight.float32.bin";
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, patch_embed_weights_in);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    {
-        string filename = "weights/patch_embed_bias.float32.bin";
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, patch_embed_bias_in);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    {
-        string filename = "weights/pos_embed.float32.bin";
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, pos_embed);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_qkv_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, attn_weights[layer][ATTN_Q]);
-        read(ifs, attn_weights[layer][ATTN_K]);
-        read(ifs, attn_weights[layer][ATTN_V]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_attn_proj_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, attn_weights[layer][ATTN_PROJ]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_qkv_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, attn_bias[layer][ATTN_Q]);
-        read(ifs, attn_bias[layer][ATTN_K]);
-        read(ifs, attn_bias[layer][ATTN_V]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_attn_proj_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, attn_bias[layer][ATTN_PROJ]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(moe_layer, NUM_LAYERS / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_w_gate_T_task0.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, moe_w_gate[moe_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(moe_layer, NUM_LAYERS / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_htoh4_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, moe_weights_l1[moe_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(moe_layer, NUM_LAYERS / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_htoh4_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, moe_bias_l1[moe_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(moe_layer, NUM_LAYERS / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_h4toh_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, moe_weights_l2[moe_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(moe_layer, NUM_LAYERS / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_h4toh_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, moe_bias_l2[moe_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc1_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, vit_weights_l1[vit_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc1_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, vit_bias_l1[vit_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc2_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, vit_weights_l2[vit_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
-    {
-        ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc2_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, vit_bias_l2[vit_layer]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_norm1_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, norm_weights[layer][NORM_1]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_norm2_weight.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, norm_weights[layer][NORM_2]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_norm1_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, norm_bias[layer][NORM_1]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
-    FOR_EACH(layer, NUM_LAYERS)
-    {
-        ostringstream oss;
-        oss << "weights/l" << layer << "_norm2_bias.float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, norm_bias[layer][NORM_2]);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
 
-    string reference_var_name;
-    {
-        ostringstream oss;
-        oss << "l" << (NUM_LAYERS - 1) << "_x_post_" << (((NUM_LAYERS - 1) % 2 == 0) ? "mlp" : "moe");
-        reference_var_name = oss.str();
-    }
-    {
-        ostringstream oss;
-        oss << "weights/" << reference_var_name << ".float32.bin";
-        string filename = oss.str();
-        ifstream ifs(filename, std::ios::binary);
-        read(ifs, reference_x);
-        if (!ifs)
-        {
-            cerr << "Error reading " << filename << endl;
-            return 1;
-        }
-    }
+    // Assign data from included arrays
+    memcpy(images[0], images_array, sizeof(images_array));
+
+    memcpy(patch_embed_weights_in, patch_embed_weights, sizeof(patch_embed_weights));
+    memcpy(patch_embed_bias_in, patch_embed_bias, sizeof(patch_embed_bias));
+    memcpy(pos_embed, pos_embed, sizeof(pos_embed));
+
+    // Load norm weights and biases
+    memcpy(norm_weights, norm_weights, sizeof(norm_weights));
+    memcpy(norm_bias, norm_bias, sizeof(norm_bias));
+
+    // Load attention weights and biases
+    memcpy(attn_weights, attn_weights, sizeof(attn_weights));
+    memcpy(attn_bias, attn_bias, sizeof(attn_bias));
+
+    // Load ViT layer weights and biases
+    memcpy(vit_weights_l1, vit_weights_l1, sizeof(vit_weights_l1));
+    memcpy(vit_bias_l1, vit_bias_l1, sizeof(vit_bias_l1));
+    memcpy(vit_weights_l2, vit_weights_l2, sizeof(vit_weights_l2));
+    memcpy(vit_bias_l2, vit_bias_l2, sizeof(vit_bias_l2));
+
+    // Load MoE weights and biases
+    memcpy(moe_weights_l1, moe_weights_l1, sizeof(moe_weights_l1));
+    memcpy(moe_bias_l1, moe_bias_l1, sizeof(moe_bias_l1));
+    memcpy(moe_weights_l2, moe_weights_l2, sizeof(moe_weights_l2));
+    memcpy(moe_bias_l2, moe_bias_l2, sizeof(moe_bias_l2));
+    memcpy(moe_w_gate, moe_w_gate_per_task[0], sizeof(moe_w_gate));
+
+    // Load reference output
+    memcpy(reference_x, reference_x_array, sizeof(reference_x_array));
+
     cout << "done!" << endl;
 
     cout << "Running kernel... " << flush;
@@ -375,7 +142,7 @@ int main(int argc, char* argv[])
     );
     cout << "done!" << endl << endl;
 
-    cout << "Sample of values from x vs. " << reference_var_name << ":" << endl;
+    cout << "Sample of values from x vs. reference:" << endl;
     {
         ostream formatted(cout.rdbuf());
         formatted << setprecision(8) << fixed;
