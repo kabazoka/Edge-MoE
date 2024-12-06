@@ -5,6 +5,9 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <unistd.h>
+#include <cstdlib> // For getenv
+
 
 constexpr double MSE_PASS_THRESHOLD = 0.1;
 constexpr unsigned int DISPLAY_PATCH_LIMIT = 5;
@@ -55,9 +58,15 @@ patch_blocks_t reference_x;
 
 int main(int argc, char* argv[])
 {
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        std::cout << "Current working directory: " << cwd << std::endl;
+    } else {
+        perror("getcwd() error");
+    }
     cout << "Loading inputs... " << flush;
     {
-        string filename = "weights/image.float32.bin";
+        string filename = "/home/kabazoka/Documents/Github/Edge-MoE/weights/image.float32.bin";
         ifstream ifs(filename, std::ios::binary);
         read(ifs, images[0]);
         if (!ifs)
@@ -67,7 +76,7 @@ int main(int argc, char* argv[])
         }
     }
     {
-        string filename = "weights/patch_embed_weight.float32.bin";
+        string filename = "/home/kabazoka/Documents/Github/Edge-MoE/weights/patch_embed_weight.float32.bin";
         ifstream ifs(filename, std::ios::binary);
         read(ifs, patch_embed_weights_in);
         if (!ifs)
@@ -77,7 +86,7 @@ int main(int argc, char* argv[])
         }
     }
     {
-        string filename = "weights/patch_embed_bias.float32.bin";
+        string filename = "/home/kabazoka/Documents/Github/Edge-MoE/weights/patch_embed_bias.float32.bin";
         ifstream ifs(filename, std::ios::binary);
         read(ifs, patch_embed_bias_in);
         if (!ifs)
@@ -87,7 +96,7 @@ int main(int argc, char* argv[])
         }
     }
     {
-        string filename = "weights/pos_embed.float32.bin";
+        string filename = "/home/kabazoka/Documents/Github/Edge-MoE/weights/pos_embed.float32.bin";
         ifstream ifs(filename, std::ios::binary);
         read(ifs, pos_embed);
         if (!ifs)
@@ -99,7 +108,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_qkv_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_qkv_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, attn_weights[layer][ATTN_Q]);
@@ -114,7 +123,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_attn_proj_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_attn_proj_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, attn_weights[layer][ATTN_PROJ]);
@@ -127,7 +136,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_qkv_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_qkv_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, attn_bias[layer][ATTN_Q]);
@@ -142,7 +151,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_attn_proj_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_attn_proj_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, attn_bias[layer][ATTN_PROJ]);
@@ -155,7 +164,7 @@ int main(int argc, char* argv[])
     FOR_EACH(moe_layer, NUM_LAYERS / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_w_gate_T_task0.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (moe_layer * 2 + 1) << "_w_gate_T_task0.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, moe_w_gate[moe_layer]);
@@ -168,7 +177,7 @@ int main(int argc, char* argv[])
     FOR_EACH(moe_layer, NUM_LAYERS / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_htoh4_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (moe_layer * 2 + 1) << "_htoh4_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, moe_weights_l1[moe_layer]);
@@ -181,7 +190,7 @@ int main(int argc, char* argv[])
     FOR_EACH(moe_layer, NUM_LAYERS / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_htoh4_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (moe_layer * 2 + 1) << "_htoh4_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, moe_bias_l1[moe_layer]);
@@ -194,7 +203,7 @@ int main(int argc, char* argv[])
     FOR_EACH(moe_layer, NUM_LAYERS / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_h4toh_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (moe_layer * 2 + 1) << "_h4toh_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, moe_weights_l2[moe_layer]);
@@ -207,7 +216,7 @@ int main(int argc, char* argv[])
     FOR_EACH(moe_layer, NUM_LAYERS / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (moe_layer * 2 + 1) << "_h4toh_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (moe_layer * 2 + 1) << "_h4toh_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, moe_bias_l2[moe_layer]);
@@ -220,7 +229,7 @@ int main(int argc, char* argv[])
     FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc1_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (vit_layer * 2) << "_fc1_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, vit_weights_l1[vit_layer]);
@@ -233,7 +242,7 @@ int main(int argc, char* argv[])
     FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc1_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (vit_layer * 2) << "_fc1_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, vit_bias_l1[vit_layer]);
@@ -246,7 +255,7 @@ int main(int argc, char* argv[])
     FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc2_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (vit_layer * 2) << "_fc2_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, vit_weights_l2[vit_layer]);
@@ -259,7 +268,7 @@ int main(int argc, char* argv[])
     FOR_EACH(vit_layer, (NUM_LAYERS + 1) / 2)
     {
         ostringstream oss;
-        oss << "weights/l" << (vit_layer * 2) << "_fc2_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << (vit_layer * 2) << "_fc2_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, vit_bias_l2[vit_layer]);
@@ -272,7 +281,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_norm1_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_norm1_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, norm_weights[layer][NORM_1]);
@@ -285,7 +294,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_norm2_weight.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_norm2_weight.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, norm_weights[layer][NORM_2]);
@@ -298,7 +307,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_norm1_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_norm1_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, norm_bias[layer][NORM_1]);
@@ -311,7 +320,7 @@ int main(int argc, char* argv[])
     FOR_EACH(layer, NUM_LAYERS)
     {
         ostringstream oss;
-        oss << "weights/l" << layer << "_norm2_bias.float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/l" << layer << "_norm2_bias.float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, norm_bias[layer][NORM_2]);
@@ -330,7 +339,7 @@ int main(int argc, char* argv[])
     }
     {
         ostringstream oss;
-        oss << "weights/" << reference_var_name << ".float32.bin";
+        oss << "/home/kabazoka/Documents/Github/Edge-MoE/weights/" << reference_var_name << ".float32.bin";
         string filename = oss.str();
         ifstream ifs(filename, std::ios::binary);
         read(ifs, reference_x);
