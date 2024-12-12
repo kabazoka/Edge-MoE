@@ -21,8 +21,8 @@ add_files -tb testbench/e2e.cpp \
 open_solution "solution1" -flow_target vitis
 
 # Use the correct part for the Alveo U50 FPGA
-# set_part {xcvu3p-fsvh2892-2-e}
-set_part {xczu9eg-ffvb1156-2-e}
+set_part xcu50-fsvh2104-2-e
+# set_part {xczu9eg-ffvb1156-2-e}
 
 # Set platform for Alveo U50
 # set_property platform "xilinx_u50_gen3x16_xdma_5_202210_1" [current_solution]
@@ -38,13 +38,13 @@ config_interface -m_axi_alignment_byte_size 64 -m_axi_latency 64 -m_axi_max_wide
 
 # Step 1: C Simulation
 puts "Starting C simulation..."
-#if {[catch {csim_design} result]} {
-#    puts "Error during C simulation: $result"
-#    exit 1
-#}
+if {[catch {csim_design} result]} {
+   puts "Error during C simulation: $result"
+   exit 1
+}
 puts "C simulation completed successfully."
 
-# Step 3: Synthesis
+# Step 2: Synthesis
 puts "Starting synthesis..."
 if {[catch {csynth_design} result]} {
     puts "Error during synthesis: $result"
@@ -52,10 +52,17 @@ if {[catch {csynth_design} result]} {
 }
 puts "Synthesis completed successfully."
 
-# Step 2: RTL Co-simulation
+# Step 3: RTL Co-simulation
 puts "Starting co-simulation..."
 if {[catch {cosim_design} result]} {
     puts "Error during co-simulation: $result"
+    exit 1
+}
+
+# Export design
+puts "Exporting design..."
+if {[catch {export_design -format ip_catalog} result]} {
+    puts "Error during export: $result"
     exit 1
 }
 puts "Co-simulation completed successfully."

@@ -352,36 +352,41 @@ int main(int argc, char* argv[])
     cout << "done!" << endl;
 
     cout << "Running kernel... " << flush;
-    ViT_compute(
-        num_images,
-        reload_one_time_weights,
-        images,
-        x,
-        tmp1,
-        tmp2,
-        tmp3,
-        tmp4,
-        tmp_hidden,
-        attn,
-        attn_softmax_info,
-        patch_embed_weights_in,
-        patch_embed_bias_in,
-        pos_embed,
-        attn_weights,
-        attn_bias,
-        moe_w_gate,
-        moe_weights_l1,
-        moe_bias_l1,
-        moe_weights_l2,
-        moe_bias_l2,
-        vit_weights_l1,
-        vit_bias_l1,
-        vit_weights_l2,
-        vit_bias_l2,
-        norm_weights,
-        norm_bias,
-        debug_id
-    );
+    int loop_count = 2;
+    cout << "Looping " << loop_count << " times for II measurement... " << flush;
+    
+    for (unsigned int i = 0; i < loop_count; i++) {
+        ViT_compute(
+            num_images,
+            reload_one_time_weights,
+            images,
+            x,
+            tmp1,
+            tmp2,
+            tmp3,
+            tmp4,
+            tmp_hidden,
+            attn,
+            attn_softmax_info,
+            patch_embed_weights_in,
+            patch_embed_bias_in,
+            pos_embed,
+            attn_weights,
+            attn_bias,
+            moe_w_gate,
+            moe_weights_l1,
+            moe_bias_l1,
+            moe_weights_l2,
+            moe_bias_l2,
+            vit_weights_l1,
+            vit_bias_l1,
+            vit_weights_l2,
+            vit_bias_l2,
+            norm_weights,
+            norm_bias,
+            debug_id
+        );
+    }
     cout << "done!" << endl << endl;
 
     cout << "Sample of values from x vs. " << reference_var_name << ":" << endl;
